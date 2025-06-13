@@ -1,6 +1,6 @@
 # DeepResearchAgent
 
-English | [简体中文](README_CN.md)
+EEnglish | [简体中文](README_CN.md)
 
 ## Introduction
 
