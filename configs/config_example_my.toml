@@ -1,0 +1,90 @@
+# General Config
+tag = "example"
+concurrency = 4
+workdir = "workdir"
+log_path = "log.txt"
+download_path = "downloads_folder"
+use_local_proxy = false # true for local proxy, false for public proxy
+split = "validation"
+save_path = "dra.jsonl"
+
+# Tool Config
+[searcher_tool]
+engine = "SerpAPI"
+fallback_engines = ["Google", "DuckDuckGo", "Baidu", "Bing"]
+retry_delay = 10
+max_retries = 3
+lang = "en"
+country = "us"
+filter_year = 0
+num_results = 5
+fetch_content = false
+max_length = 50000
+
+[deep_researcher_tool]
+model_id = "qwen3_8b"
+max_depth = 2
+max_insights = 20
+time_limit_seconds = 60
+max_follow_ups = 3
+
+[browser_tool]
+model_id = "qwen3_8b"
+headless = false
+disable_security = true
+extra_chromium_args = []
+chrome_instance_path = ""
+wss_url = ""
+cdp_url = ""
+use_proxy = false
+max_length = 50000
+[browser.proxy]
+server = "xxxx"
+username = "xxxx"
+password = "xxxx"
+
+[deep_analyzer_tool]
+analyzer_model_ids = ["qwen3_8b"]
+summarizer_model_id = "qwen3_8b"
+
+# Agent configs
+[agent]
+name = "dra"
+use_hierarchical_agent = true
+
+[agent.planning_agent_config]
+model_id = "qwen3_8b"
+name = "planning_agent"
+description = "A planning agent that can plan the steps to complete the task."
+max_steps = 20
+template_path = "src/agent/planning_agent/prompts/planning_agent.yaml"
+tools = ["planning"]
+managed_agents = ["deep_analyzer_agent", "browser_use_agent", "deep_researcher_agent"]
+
+[agent.deep_analyzer_agent_config]
+model_id = "qwen3_8b"
+name = "deep_analyzer_agent"
+description = "Performs systematic, step-by-step analysis..."
+max_steps = 3
+template_path = "src/agent/deep_analyzer_agent/prompts/deep_analyzer_agent.yaml"
+tools = ["deep_analyzer", "python_interpreter"]
+
+[agent.browser_use_agent_config]
+model_id = "qwen3_8b"
+name = "browser_use_agent"
+description = "Searches relevant web pages and interacts with them."
+max_steps = 5
+template_path = "src/agent/browser_use_agent/prompts/browser_use_agent.yaml"
+tools = ["auto_browser_use", "python_interpreter"]
+
+[agent.deep_researcher_agent_config]
+model_id = "qwen3_8b"
+name = "deep_researcher_agent"
+description = "Conducts extensive web searches."
+max_steps = 3
+template_path = "src/agent/deep_researcher_agent/prompts/deep_researcher_agent.yaml"
+tools = ["deep_researcher", "python_interpreter"]
+
+[dataset]
+name = "2023_all"
+path = "data/GAIA"

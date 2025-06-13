@@ -9,7 +9,11 @@ from src.config import config
 from src.tools.search import (
     GoogleSearchEngine,
     WebSearchEngine,
-    SearchItem
+    SearchItem,
+    SerpAPISearchEngine,
+    BaiduSearchEngine,
+    BingSearchEngine,
+    DuckDuckGoSearchEngine,
 )
 from src.tools import AsyncTool, ToolResult
 from src.logger import logger
@@ -122,7 +126,11 @@ class WebSearcherTool(AsyncTool):
 
         self.searcher_config = config.searcher_tool
         self._search_engine: dict[str, WebSearchEngine] = {
-            "google": GoogleSearchEngine()
+            "google": GoogleSearchEngine(),
+            "serpapi": SerpAPISearchEngine(),
+            "baidu": BaiduSearchEngine(),
+            "bing": BingSearchEngine(),
+            "duckduckgo": DuckDuckGoSearchEngine(),
         }
         self.max_length: int = (
             getattr(self.searcher_config, "max_length", 20000)

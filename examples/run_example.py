@@ -16,7 +16,8 @@ from src.utils import assemble_project_path
 
 async def main():
     # Init config and logger
-    config.init_config(config_path=assemble_project_path("configs/config_example.toml"))
+    # config.init_config(config_path=assemble_project_path("configs/config_example.toml"))
+    config.init_config(config_path=assemble_project_path("configs/config_example_my.toml"))
     logger.init_logger(config.log_path)
     logger.info(f"Initializing logger: {config.log_path}")
     logger.info(f"Load config: {config}")
@@ -30,6 +31,7 @@ async def main():
 
     # Run example
     task = "Use deep_researcher_agent to search the latest papers on the topic of 'AI Agent' and then summarize it."
+
     res = await agent.run(task)
     logger.info(f"Result: {res}")
 

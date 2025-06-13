@@ -125,7 +125,9 @@ class LiteLLMModel(ApiModel):
                 {
                     "tools": [self.message_manager.get_tool_json_schema(tool,
                                    model_id=self.model_id) for tool in tools_to_call_from],
-                    "tool_choice": "required",
+                    # "tool_choice": "required",
+                    "tool_choice": "auto",
+
                 }
             )
 

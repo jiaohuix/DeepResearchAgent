@@ -158,6 +158,10 @@ class ModelManager(metaclass=Singleton):
                     "model_name": "gpt-4o-search-preview",
                     "model_id": "gpt-4o-search-preview",
                 },
+                {
+                    "model_name": "qwen3_8b",
+                    "model_id": "openai/Qwen/Qwen3-8B",
+                },
             ]
             
             for model in models:
