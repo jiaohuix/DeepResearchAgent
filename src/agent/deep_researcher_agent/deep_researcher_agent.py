@@ -1,10 +1,14 @@
 from typing import (
     Any,
     Callable,
-    Optional
+    Optional,
+    List,
+    Dict
 )
 import yaml
 import json
+import re
+import uuid
 from rich.panel import Panel
 from rich.text import Text
 
@@ -25,6 +29,7 @@ from src.logger import (LogLevel,
                         YELLOW_HEX, 
                         logger)
 from src.models import Model, parse_json_if_needed, ChatMessage
+from src.models.base import ChatMessageToolCall, ChatMessageToolCallDefinition
 from src.utils.agent_types import (
     AgentAudio,
     AgentImage,
@@ -214,11 +219,14 @@ class DeepResearcherAgent(AsyncMultiStepAgent):
             raise AgentGenerationError(f"Error while generating output:\n{e}", self.logger) from e
 
         if chat_message.tool_calls is None or len(chat_message.tool_calls) == 0:
+            self.logger.debug(f"[DeepResearcherAgent] Before parsing content: chat_message type={type(chat_message)}, content='{chat_message.content[:200]}...', tool_calls={chat_message.tool_calls}")
             try:
-                chat_message = self.model.parse_tool_calls(chat_message)
+                chat_message = self._parse_tool_calls_from_content(chat_message)
+                self.logger.debug(f"[DeepResearcherAgent] After parsing content: chat_message.tool_calls={chat_message.tool_calls}, chat_message.content={chat_message.content}")
             except Exception as e:
                 raise AgentParsingError(f"Error while parsing tool call from model output: {e}", self.logger)
         else:
+            self.logger.debug(f"[DeepResearcherAgent] Model returned structured tool calls: {chat_message.tool_calls}")
             for tool_call in chat_message.tool_calls:
                 tool_call.function.arguments = parse_json_if_needed(tool_call.function.arguments)
 
@@ -280,3 +288,49 @@ class DeepResearcherAgent(AsyncMultiStepAgent):
             )
             memory_step.observations = updated_information
             return None
+
+    def _parse_tool_calls_from_content(self, chat_message: ChatMessage) -> ChatMessage:
+        """
+        Parses tool calls from the content of a ChatMessage object if tool_calls is empty.
+        Updates the chat_message.tool_calls attribute with the parsed information.
+        """
+        if chat_message.tool_calls is None or len(chat_message.tool_calls) == 0:
+            text = chat_message.content
+            if not text:
+                return chat_message
+
+            # Regular expression to find JSON in Action: block.
+            # This regex now ensures it captures the full JSON block by using a greedy match for content
+            # and a positive lookahead to assert the end of the JSON is followed by a newline or end of string.
+            tool_call_match = re.search(r"Action:\n\s*(\{.*\})\s*(?=\n|$)", text, re.DOTALL)
+            
+            if tool_call_match:
+                tool_call_json_str = tool_call_match.group(1)
+                self.logger.debug(f"[DeepResearcherAgent] Extracted JSON string from content: {tool_call_json_str}")
+                try:
+                    tool_call_dict = json.loads(tool_call_json_str)
+                    name = tool_call_dict.get("name")
+                    arguments = tool_call_dict.get("arguments")
+                    self.logger.debug(f"[DeepResearcherAgent] Parsed tool: name={name}, arguments={arguments}")
+
+                    if name and arguments is not None:
+                        parsed_tool_call = ChatMessageToolCall(
+                            id=str(uuid.uuid4()),
+                            type="function", # Assuming type is 'function' for parsed tool calls
+                            function=ChatMessageToolCallDefinition(
+                                name=name,
+                                arguments=arguments
+                            )
+                        )
+                        # Create a new list for tool_calls if it's None, then append
+                        if chat_message.tool_calls is None:
+                            chat_message.tool_calls = []
+                        chat_message.tool_calls.append(parsed_tool_call)
+                        # Clear the content if a tool call was successfully parsed from it
+                        chat_message.content = None
+                        self.logger.info("Successfully parsed tool call from content.")
+                except json.JSONDecodeError as e:
+                    self.logger.warning(f"Failed to parse tool call JSON from text: {e}")
+                except Exception as e:
+                    self.logger.error(f"An unexpected error occurred during parsing: {e}")
+        return chat_message
